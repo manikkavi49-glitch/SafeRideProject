@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "116790427666",
+    "firebase_url": "https://saferide-g5-default-rtdb.firebaseio.com",
+    "project_id": "saferide-g5",
+    "storage_bucket": "saferide-g5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:116790427666:android:fce8cdc642a087297498cb",
+        "android_client_info": {
+          "package_name": "com.example.saferide_driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMmTpVj-sAc7RnPFVHaqp2e_6vFY9BUwg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:116790427666:android:a8ab2bb963e9c33b7498cb",
+        "android_client_info": {
+          "package_name": "com.example.saferide_parent"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDMmTpVj-sAc7RnPFVHaqp2e_6vFY9BUwg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

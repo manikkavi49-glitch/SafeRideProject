@@ -1,0 +1,40 @@
+name: saferide_parent
+description: "SafeRide Tracking & Safety System - Parent Application"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Firebase Core saha Database
+  firebase_core: ^3.10.1
+  firebase_database: ^11.3.0
+
+  # Google Maps saha Location tracking
+  google_maps_flutter: ^2.10.0
+  geolocator: ^13.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+
+  # Oyaata marker icon ekak danna oni nam assets section eka methana thiyenne
+  # assets:
+  #   - assets/bus_icon.png
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/parrnt.png" # Oyaage image eke name eka methanata danna
