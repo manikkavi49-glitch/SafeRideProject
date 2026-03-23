@@ -50,7 +50,7 @@ Create a file at 'lib/services/auth_service.dart' in your app folder.
 Use this standardized code for Login/Register:
 
 --- START CODE ---
-import 'package:firebase_auth/firebase_auth.dart';
+'''import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
@@ -90,6 +90,7 @@ class AuthService {
     }
   }
 }
+'''
 --- END CODE ---
 
 6. GIT WORKFLOW (HOW TO UPDATE)
