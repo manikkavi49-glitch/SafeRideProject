@@ -5,7 +5,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.11.1
+  sdk: '>=3.1.0 <4.0.0' # Python 3.11 සමඟ ගැලපෙන ස්ථාවර SDK පරාසයක්
 
 dependencies:
   flutter:
@@ -13,28 +13,47 @@ dependencies:
 
   cupertino_icons: ^1.0.8
 
-  # Firebase Core saha Database
+  # Firebase Core, Database saha Auth (Login සඳහා අත්‍යවශ්‍යයි)
   firebase_core: ^3.10.1
   firebase_database: ^11.3.0
+  firebase_auth: ^5.4.1 # ඔබගේ login_screen.dart සඳහා අවශ්‍ය වේ
 
   # Google Maps saha Location tracking
   google_maps_flutter: ^2.10.0
-  geolocator: ^13.0.2
+  geolocator: ^13.0.2 # location_service.dart සඳහා අවශ්‍ය වේ
+
+  # Safety Alerts (Alarm saha Vibration සඳහා)
+  audioplayers: ^5.2.1 # alarm_service.dart සඳහා අවශ්‍ය වේ
+  vibration: ^3.1.8   # alarm_service.dart සඳහා අවශ්‍ය වේ
+
+  camera: ^0.10.5+9   # 🔥 ADD THIS
+  google_mlkit_face_detection: ^0.13.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0 # Methana thibunu "flutter upgrade" kalla delete karanna
+  flutter_lints: ^3.0.0
   flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
 
-  # Oyaata marker icon ekak danna oni nam assets section eka methana thiyenne
-  # assets:
-  #   - assets/bus_icon.png
+  # Alarm ශබ්දය පද්ධතියට හඳුන්වා දීම
+  assets:
+    - assets/audio/alarm.mp3 # alarm_service.dart හි ඇති path එකට අනුව
+    - assets/driver.png      # launcher icon එක සඳහා
 
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
-  image_path: "assets/driver.png" # Oyaage image eke name eka methanata danna
+  image_path: "assets/driver.png"
+
+  dependencies:
+  flutter:
+    sdk: flutter
+  camera: ^0.10.5+5
+  google_mlkit_face_detection: ^0.11.0
+  path_provider: ^2.1.1
+
+
+  
