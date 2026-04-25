@@ -61,7 +61,7 @@ class _ParentMapScreenState extends State<ParentMapScreen> {
         );
       }
     }, onError: (error) {
-      print("Firebase Error: $error");
+      debugPrint("Firebase Error: $error");
     });
   }
 
