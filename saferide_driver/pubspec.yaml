@@ -7,6 +7,8 @@ version: 1.0.0+1
 environment:
   sdk: '>=3.1.0 <4.0.0' # Python 3.11 සමඟ ගැලපෙන ස්ථාවර SDK පරාසයක්
 
+  
+
 dependencies:
   flutter:
     sdk: flutter
@@ -28,6 +30,9 @@ dependencies:
 
   camera: ^0.10.5+9   # 🔥 ADD THIS
   google_mlkit_face_detection: ^0.13.2
+
+  image_picker: ^1.1.2
+  
 
 dev_dependencies:
   flutter_test:

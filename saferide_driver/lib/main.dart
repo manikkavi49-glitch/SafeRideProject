@@ -7,6 +7,7 @@ import 'home_screen.dart';
 import 'attendance_screen.dart';
 import 'messages_screen.dart';
 import 'status_screen.dart';
+import 'profile_screen.dart'; // 🔥 NEW
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,7 +52,6 @@ class AuthGate extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // 🔄 Loading
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(
@@ -60,12 +60,10 @@ class AuthGate extends StatelessWidget {
           );
         }
 
-        // ✅ Logged in
         if (snapshot.hasData && snapshot.data != null) {
           return const DriverMainShell();
         }
 
-        // ❌ Not logged
         return const LoginScreen();
       },
     );
@@ -118,6 +116,15 @@ class _DriverMainShellState extends State<DriverMainShell> {
     }
   }
 
+  // 🔥 Page titles for each tab
+  static const List<String> _titles = [
+    'Home',
+    'Attendance',
+    'Messages',
+    'Status',
+    'My Profile',
+  ];
+
   String get _driverName {
     final user = FirebaseAuth.instance.currentUser;
     return user?.displayName ?? user?.email ?? 'Driver';
@@ -133,33 +140,39 @@ class _DriverMainShellState extends State<DriverMainShell> {
       AttendanceScreen(isTripActive: _isTripActive),
       MessagesScreen(isTripActive: _isTripActive),
       StatusScreen(isTripActive: _isTripActive),
+      const ProfileScreen(), // 🔥 NEW
     ];
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           children: [
-            const Text('SafeRide Driver Portal'),
-            Text(
-              _driverName,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.normal,
+            Text(_titles[_currentIndex]),
+            // Only show driver name on non-profile tabs
+            if (_currentIndex != 4)
+              Text(
+                _driverName,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.normal,
+                ),
               ),
-            ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.red),
-            tooltip: 'Sign Out',
-            onPressed: _signOut,
-          ),
+          // 🔥 Show sign-out button only when NOT on profile tab
+          // (profile tab has its own security section)
+          if (_currentIndex != 4)
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.red),
+              tooltip: 'Sign Out',
+              onPressed: _signOut,
+            ),
         ],
       ),
 
-      // 🔥 Important: keep state (camera won't reload)
+      // Keep state alive (camera won't reload)
       body: IndexedStack(
         index: _currentIndex,
         children: screens,
@@ -188,6 +201,10 @@ class _DriverMainShellState extends State<DriverMainShell> {
           BottomNavigationBarItem(
             icon: Icon(Icons.info_outline),
             label: 'Status',
+          ),
+          BottomNavigationBarItem(           // 🔥 NEW
+            icon: Icon(Icons.person_outline),
+            label: 'Profile',
           ),
         ],
       ),
