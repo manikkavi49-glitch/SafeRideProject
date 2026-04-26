@@ -52,6 +52,48 @@ class SafeRideParentApp extends StatelessWidget {
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
+class ParentMapScreen extends StatefulWidget {
+  const ParentMapScreen({super.key});
+
+  @override
+  State<ParentMapScreen> createState() => _ParentMapScreenState();
+}
+
+class _ParentMapScreenState extends State<ParentMapScreen> {
+  // Default position eka Colombo (6.9271, 79.8612)
+  LatLng _busPos = const LatLng(6.9271, 79.8612); 
+  GoogleMapController? _mapController;
+  
+  // Firebase reference eka hariyatama image eke thibuna path ekata
+  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref("v1/locations/van01");
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToBusLocation();
+  }
+
+  void _listenToBusLocation() {
+    _dbRef.onValue.listen((event) {
+      final data = event.snapshot.value as Map?;
+      if (data != null) {
+        // Data types double walata cast kirima
+        double lat = (data['lat'] as num).toDouble();
+        double lng = (data['lng'] as num).toDouble();
+
+        setState(() {
+          _busPos = LatLng(lat, lng);
+        });
+
+        // Bus eka move weddi Map Camera ekath bus eka passhen yanawa
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLng(_busPos),
+        );
+      }
+    }, onError: (error) {
+      debugPrint("Firebase Error: $error");
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
