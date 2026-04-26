@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeRide | Driver Profile & Tracking</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet" href="style.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <style>
+        .details-container { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px; 
+            margin-top: 10px; 
+        }
+        .info-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 5px 10px rgba(0,0,0,0.1); 
+        }
+        .info-card h3 { 
+            border-bottom: 2px solid #f1f1f1; 
+            padding-bottom: 10px; 
+            margin-bottom: 15px; 
+            color: #083c5a; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .detail-row { margin-bottom: 12px; font-size: 15px; display: flex; }
+        .detail-row b { color: #333; width: 140px; display: inline-block; flex-shrink: 0; }
+        .detail-row span { color: #555; }
+        
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #f1f1f1;
+            color: #333;
+            padding: 8px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: 0.3s;
+            margin-bottom: 15px;
+        }
+        .back-btn:hover { background: #e0e0e0; }
+        #driver-map { 
+            height: 400px; 
+            width: 100%; 
+            border-radius: 12px; 
+            margin-top: 10px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-details">
+            <i class='bx bxs-bus'></i>
+            <span class="logo_name">SafeRide</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class='bx bx-grid-alt'></i><span class="links_name">Dashboard</span></a></li>
+            <li><a href="drivers.html"><i class='bx bx-user'></i><span class="links_name">Drivers</span></a></li>
+            <li class="log_out">
+                <a href="login.html">
+                    <i class='bx bx-log-out'></i>
+                    <span class="links_name">Log out</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <section class="home-section">
+        <nav>
+            <div class="sidebar-button">
+                <i class='bx bx-menu sidebarBtn'></i>
+                <span class="dashboard">Detailed View</span>
+            </div>
+            <div class="profile-details">
+                <span class="admin_name">Admin User</span>
+            </div>
+        </nav>
+
+        <div class="home-content">
+            <a href="index.html" class="back-btn">
+                <i class='bx bx-left-arrow-alt'></i> Back to Dashboard
+            </a>
+
+            <div class="details-container">
+                <div class="info-card">
+                    <h3><i class='bx bx-id-card'></i> Driver & Vehicle Info</h3>
+                    <div class="detail-row"><b>Driver Name:</b> <span id="det-name">Loading...</span></div>
+                    <div class="detail-row"><b>Vehicle No:</b> <span id="det-vehicle">Loading...</span></div>
+                    <div class="detail-row"><b>Contact No:</b> <span id="det-phone">Loading...</span></div>
+                    <div class="detail-row"><b>License Status:</b> <span class="status-btn verified" style="background: #27ae60; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px;">Active</span></div>
+                </div>
+
+                <div class="info-card">
+                    <h3><i class='bx bx-group'></i> Assigned Students</h3>
+                    <div class="student-entry" style="margin-bottom: 15px;">
+                        <div class="detail-row"><b>Student:</b> <span>Kamal Perera (Grade 8)</span></div>
+                        <div class="detail-row"><b>Parent:</b> <span>Mrs. Priyani Perera</span></div>
+                        <div class="detail-row"><b>Address:</b> <span>No 12, Highlevel Rd, Maharagama</span></div>
+                    </div>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin-bottom: 15px;">
+                    <div class="student-entry">
+                        <div class="detail-row"><b>Student:</b> <span>Nimal Silva (Grade 10)</span></div>
+                        <div class="detail-row"><b>Parent:</b> <span>Mr. Sunil Silva</span></div>
+                        <div class="detail-row"><b>Address:</b> <span>No 45, Station Rd, Pannipitiya</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card" style="margin-top: 20px;">
+                <h3><i class='bx bx-map-pin'></i> Live Tracking - <span id="map-driver-title" style="color: #3498db;">Driver</span></h3>
+                <div id="driver-map"></div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Sidebar logic
+            let sidebar = document.querySelector(".sidebar");
+            let sidebarBtn = document.querySelector(".sidebarBtn");
+            if (sidebarBtn) {
+                sidebarBtn.onclick = function() {
+                    sidebar.classList.toggle("active");
+                }
+            }
+
+            // LocalStorage එකෙන් Dashboard එකේදී click කරපු driver ගේ දත්ත ලබාගැනීම
+            const driverData = JSON.parse(localStorage.getItem('viewing_driver'));
+
+            if (driverData) {
+                // UI එකට දත්ත ඇතුළත් කිරීම
+                document.getElementById('det-name').innerText = driverData.name;
+                document.getElementById('det-vehicle').innerText = driverData.vehicle;
+                document.getElementById('det-phone').innerText = driverData.phone;
+                document.getElementById('map-driver-title').innerText = driverData.name + " (" + driverData.vehicle + ")";
+
+                // Map එක Load කිරීම
+                // සාමාන්‍යයෙන් ශ්‍රී ලංකාවේ පිහිටීමක් පෙන්වීමට coordinates (6.9271, 79.8612) භාවිතා කරමු
+                const lat = 6.9271 + (Math.random() * 0.01); // සැබෑ tracking එකක් මෙන් පෙන්වීමට පොඩි වෙනසක් කිරීම
+                const lng = 79.8612 + (Math.random() * 0.01);
+
+                var map = L.map('driver-map').setView([lat, lng], 15);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                // Marker එකක් එකතු කිරීම
+                var marker = L.marker([lat, lng]).addTo(map);
+                marker.bindPopup(`<b>${driverData.name}</b><br>Vehicle: ${driverData.vehicle}<br>Status: On Move`).openPopup();
+
+            } else {
+                // දත්ත නැත්නම් නැවත Dashboard එකට යැවීම
+                alert("Please select a driver from the dashboard first.");
+                window.location.href = "index.html";
+            }
+        });
+    </script>
+</body>
+</html>

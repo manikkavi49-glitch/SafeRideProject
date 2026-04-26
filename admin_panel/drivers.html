@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeRide | Drivers</title>
+    <link rel="stylesheet" href="style.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-details">
+            <i class='bx bxs-bus'></i>
+            <span class="logo_name">SafeRide</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html"><i class='bx bx-grid-alt'></i><span class="links_name">Dashboard</span></a></li>
+            <li><a href="drivers.html" class="active"><i class='bx bx-user'></i><span class="links_name">Drivers</span></a></li>
+            <li><a href="#"><i class='bx bx-map'></i><span class="links_name">Live Tracking</span></a></li>
+            <li class="log_out"><a href="#"><i class='bx bx-log-out'></i><span class="links_name">Log out</span></a></li>
+        </ul>
+    </div>
+
+    <section class="home-section">
+        <nav>
+            <div class="sidebar-button">
+                <i class='bx bx-menu sidebarBtn'></i>
+                <span class="dashboard">Driver Management</span>
+            </div>
+        </nav>
+
+        <div class="home-content">
+            <div class="table-box" style="margin-bottom: 25px;">
+                <div class="title">Register New Driver</div>
+                <form id="driverRegisterForm" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <input type="text" id="driverName" placeholder="Full Name" required style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex: 1;">
+                    <input type="text" id="vehicleNumber" placeholder="Vehicle No" required style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex: 1;">
+                    <input type="text" id="contactNumber" placeholder="Contact No" required style="padding: 10px; border-radius: 8px; border: 1px solid #ddd; flex: 1;">
+                    <button type="submit" style="background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Register Driver</button>
+                </form>
+            </div>
+
+            <div class="table-box">
+                <div class="title">All Registered Drivers</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Driver Name</th>
+                            <th>Vehicle No</th>
+                            <th>Contact</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="driverListTable"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+    <script src="script.js"></script>
+</body>
+</html>

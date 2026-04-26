@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeRide | Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo-details">
+            <i class='bx bxs-bus'></i>
+            <span class="logo_name">SafeRide</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active"><i class='bx bx-grid-alt'></i><span class="links_name">Dashboard</span></a></li>
+            <li><a href="drivers.html"><i class='bx bx-user'></i><span class="links_name">Drivers</span></a></li>
+            <li><a href="#"><i class='bx bx-map'></i><span class="links_name">Live Tracking</span></a></li>
+            <li class="log_out"><a href="#"><i class='bx bx-log-out'></i><span class="links_name">Log out</span></a></li>
+        </ul>
+    </div>
+
+    <section class="home-section">
+        <nav>
+            <div class="sidebar-button">
+                <i class='bx bx-menu sidebarBtn'></i>
+                <span class="dashboard">Dashboard</span>
+            </div>
+            <div class="profile-details"><span class="admin_name">Admin User</span></div>
+        </nav>
+
+        <div class="home-content">
+            <div class="overview-boxes">
+                <div class="box">
+                    <div class="right-side">
+                        <div class="box-topic">Total Drivers</div>
+                        <div class="number" id="totalDriversCount">0</div>
+                    </div>
+                </div>
+                <div class="box">
+                    <div class="right-side" style="width: 100%;">
+                        <div class="box-topic">Monthly Reg.</div>
+                        <div class="number" id="monthlyCount">0</div>
+                        <div style="margin-top: 10px; display: flex; gap: 5px;">
+                            <select id="monthFilter" class="small-select"></select>
+                            <select id="yearFilter" class="small-select"></select>
+                        </div>
+                    </div>
+                </div>
+                <div class="box">
+                    <div class="right-side">
+                        <div class="box-topic">Annual Summary</div>
+                        <div class="number" id="annualCount">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-box" style="margin-bottom: 25px;">
+                <div class="title">Registration Analytics</div>
+                <div style="height: 300px;"><canvas id="registrationChart"></canvas></div>
+            </div>
+
+            <div class="table-box">
+                <div class="title">New Driver Requests</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Driver Name</th>
+                            <th>Vehicle No</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboardTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+    <script src="script.js"></script>
+</body>
+</html>
