@@ -2,8 +2,8 @@ plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
-    // Firebase plugin eka methanata danna
-    id("com.google.gms.google-services")
+    // Only keep one of these:
+    id("com.google.gms.google-services") 
 }
 
 android {
@@ -46,7 +46,10 @@ flutter {
 }
 
 dependencies {
-    // Parent app ekatath Firebase aniwaryayi map data kiyavaaganna
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-analytics")
+    // Add this for your bus tracking data:
+    implementation("com.google.firebase:firebase-database")
 }
+
+

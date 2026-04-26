@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+// Your local page imports
+import 'splash_screen.dart';
+import 'login_page.dart';
+import 'navigation_menu.dart';
+import 'register_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: "AIzaSyDMmTpVj-sAc7RnPFVHaqp2e_6vFY9BUwg",
+      appId: "1:116790427666:android:a8ab2bb963e9c33b7498cb",
+      messagingSenderId: "116790427666",
+      projectId: "saferide-g5",
+      databaseURL: "https://saferide-g5-default-rtdb.firebaseio.com",
+      storageBucket: "saferide-g5.firebasestorage.app",
+    ),
+  );
+
   runApp(const SafeRideParentApp());
 }
 
@@ -16,87 +32,49 @@ class SafeRideParentApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.green),
-      home: const ParentMapScreen(),
+      title: 'SafeRide Parent',
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.green,
+      ),
+      // The app starts at the Splash Screen
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const SplashScreen(),
+        // This is the "Gatekeeper" that checks if user is logged in
+        '/gatekeeper': (context) => const AuthWrapper(), 
+        '/register': (context) => const RegisterPage(),
+        '/login_page': (context) => const LoginPage(), // Direct access if needed
+      },
     );
   }
 }
 
-class ParentMapScreen extends StatefulWidget {
-  const ParentMapScreen({super.key});
-
-  @override
-  State<ParentMapScreen> createState() => _ParentMapScreenState();
-}
-
-class _ParentMapScreenState extends State<ParentMapScreen> {
-  // Default position eka Colombo (6.9271, 79.8612)
-  LatLng _busPos = const LatLng(6.9271, 79.8612); 
-  GoogleMapController? _mapController;
-  
-  // Firebase reference eka hariyatama image eke thibuna path ekata
-  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref("v1/locations/van01");
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToBusLocation();
-  }
-
-  void _listenToBusLocation() {
-    _dbRef.onValue.listen((event) {
-      final data = event.snapshot.value as Map?;
-      if (data != null) {
-        // Data types double walata cast kirima
-        double lat = (data['lat'] as num).toDouble();
-        double lng = (data['lng'] as num).toDouble();
-
-        setState(() {
-          _busPos = LatLng(lat, lng);
-        });
-
-        // Bus eka move weddi Map Camera ekath bus eka passhen yanawa
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLng(_busPos),
-        );
-      }
-    }, onError: (error) {
-      print("Firebase Error: $error");
-    });
-  }
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("SafeRide - School Van Tracker"),
-        backgroundColor: Colors.green.shade100,
-        centerTitle: true,
-      ),
-      body: GoogleMap(
-        // Map eka create unama controller eka ganna
-        onMapCreated: (controller) => _mapController = controller,
-        initialCameraPosition: CameraPosition(target: _busPos, zoom: 15),
-        markers: {
-          Marker(
-            markerId: const MarkerId("van"),
-            position: _busPos,
-            // Marker eka Orange (Yellowish) karamu
-            icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
-            infoWindow: const InfoWindow(
-              title: "SafeRide School Van",
-              snippet: "Live Tracking Active",
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // Show a loader while Firebase checks the login status
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
             ),
-          ),
-        },
-      ),
-      // Floating button ekak damma ayeth bus eka thiyena thanata camera eka ganna
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _mapController?.animateCamera(CameraUpdate.newLatLng(_busPos));
-        },
-        child: const Icon(Icons.my_location),
-      ),
+          );
+        }
+
+        // If user is logged in, take them to the Dashboard (NavigationMenu)
+        if (snapshot.hasData) {
+          return const NavigationMenu();
+        } 
+        
+        // If not logged in, take them to the Login Page
+        return const LoginPage();
+      },
     );
   }
 }
