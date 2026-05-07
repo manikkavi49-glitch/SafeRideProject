@@ -11,12 +11,20 @@ class StatusScreen extends StatefulWidget {
 }
 
 class _StatusScreenState extends State<StatusScreen> {
-  final DatabaseReference _locationRef =
-      FirebaseDatabase.instance.ref("v1/locations/van01");
-  final DatabaseReference _safetyRef =
-      FirebaseDatabase.instance.ref("safety_status");
-  final DatabaseReference _attendanceRef =
-      FirebaseDatabase.instance.ref("attendance/trip_001");
+  // වෑන් රථයේ ID එක (මෙය ඔබගේ පද්ධතියට අනුව ගතිකව ලබාගත හැක)
+  final String _vanId = "van01"; 
+
+  // එදිනට අදාළ නිවැරදි Trip ID එක සාදා ගැනීම
+  String get _todayTripId {
+    final now = DateTime.now();
+    final date = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+    return 'trip_${_vanId}_$date'; 
+  }
+
+  // Firebase References
+  late DatabaseReference _locationRef;
+  late DatabaseReference _safetyRef;
+  late DatabaseReference _attendanceRef;
 
   StreamSubscription<DatabaseEvent>? _locationSub;
   StreamSubscription<DatabaseEvent>? _safetySub;
@@ -40,6 +48,11 @@ class _StatusScreenState extends State<StatusScreen> {
   @override
   void initState() {
     super.initState();
+    // නිවැරදි පථයන්ට (Paths) සම්බන්ධ කිරීම
+    _locationRef = FirebaseDatabase.instance.ref("v1/locations/$_vanId");
+    _safetyRef = FirebaseDatabase.instance.ref("v1/alerts/$_vanId");
+    _attendanceRef = FirebaseDatabase.instance.ref("attendance/$_todayTripId");
+
     _startListeners();
     if (widget.isTripActive) _startTimer();
   }
@@ -68,6 +81,7 @@ class _StatusScreenState extends State<StatusScreen> {
   }
 
   void _startListeners() {
+    // 1. Location Listener
     _locationSub = _locationRef.onValue.listen((event) {
       final data = event.snapshot.value as Map?;
       if (data != null && mounted) {
@@ -76,12 +90,12 @@ class _StatusScreenState extends State<StatusScreen> {
           _speed = double.tryParse(data['speed']?.toString() ?? '0') ?? 0;
           _lat = (data['lat'] as num?)?.toDouble() ?? 0;
           _lng = (data['lng'] as num?)?.toDouble() ?? 0;
-          _lastUpdate =
-              '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
+          _lastUpdate = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
         });
       }
     });
 
+    // 2. Safety Listener
     _safetySub = _safetyRef.onValue.listen((event) {
       final data = event.snapshot.value as Map?;
       if (data != null && mounted) {
@@ -92,21 +106,30 @@ class _StatusScreenState extends State<StatusScreen> {
       }
     });
 
+    // 3. Attendance Summary Listener (පින්තූරයේ පථයට අනුව)
     _attendanceSub = _attendanceRef.onValue.listen((event) {
       final data = event.snapshot.value as Map?;
-      if (data == null) return;
-      int onBoard = 0, exited = 0;
+      if (data == null) {
+        if (mounted) setState(() { _studentsOnBoard = 0; _studentsExited = 0; });
+        return;
+      }
+      
+      int onBoard = 0;
+      int exited = 0;
+      
       data.forEach((_, v) {
         if (v is Map) {
+          // Firebase හි status අගය අනුව ගණනය කිරීම
           if (v['status'] == 'onBoard') onBoard++;
           if (v['status'] == 'exited') exited++;
         }
       });
+      
       if (mounted) {
         setState(() {
-        _studentsOnBoard = onBoard;
-        _studentsExited = exited;
-      });
+          _studentsOnBoard = onBoard;
+          _studentsExited = exited;
+        });
       }
     });
   }
@@ -120,7 +143,6 @@ class _StatusScreenState extends State<StatusScreen> {
     super.dispose();
   }
 
-  // Convert m/s to km/h
   String get _speedKmh => '${(_speed * 3.6).toStringAsFixed(0)} km/h';
   bool get _isOverSpeed => _speed * 3.6 > 60;
 
@@ -132,75 +154,47 @@ class _StatusScreenState extends State<StatusScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Trip active indicator
             _StatusCard(
-              icon: widget.isTripActive
-                  ? Icons.radio_button_on
-                  : Icons.radio_button_off,
-              iconColor:
-                  widget.isTripActive ? Colors.green : Colors.grey,
+              icon: widget.isTripActive ? Icons.radio_button_on : Icons.radio_button_off,
+              iconColor: widget.isTripActive ? Colors.green : Colors.grey,
               title: widget.isTripActive ? 'Trip Active' : 'No Active Trip',
-              subtitle: widget.isTripActive
-                  ? 'Elapsed: $_elapsed'
-                  : 'Start a trip from the Home screen',
-              backgroundColor: widget.isTripActive
-                  ? Colors.green.shade50
-                  : Colors.grey.shade100,
+              subtitle: widget.isTripActive ? 'Elapsed: $_elapsed' : 'Start a trip from the Home screen',
+              backgroundColor: widget.isTripActive ? Colors.green.shade50 : Colors.grey.shade100,
             ),
             const SizedBox(height: 12),
-
-            // Speed
             _StatusCard(
               icon: Icons.speed,
               iconColor: _isOverSpeed ? Colors.red : Colors.blue,
               title: 'Current Speed',
-              subtitle: widget.isTripActive
-                  ? (_isOverSpeed
-                      ? '$_speedKmh  ⚠️ Over Speed Limit (60 km/h)'
-                      : _speedKmh)
-                  : '--',
-              backgroundColor: _isOverSpeed
-                  ? Colors.red.shade50
-                  : Colors.blue.shade50,
+              subtitle: widget.isTripActive ? (_isOverSpeed ? '$_speedKmh  ⚠️ Over Speed Limit' : _speedKmh) : '--',
+              backgroundColor: _isOverSpeed ? Colors.red.shade50 : Colors.blue.shade50,
             ),
             const SizedBox(height: 12),
-
-            // Location
             _StatusCard(
               icon: Icons.location_on,
               iconColor: Colors.orange,
               title: 'Last Known Location',
-              subtitle: widget.isTripActive && _lat != 0
-                  ? '${_lat.toStringAsFixed(5)}, ${_lng.toStringAsFixed(5)}\nUpdated: $_lastUpdate'
-                  : 'Not available',
+              subtitle: widget.isTripActive && _lat != 0 ? '${_lat.toStringAsFixed(5)}, ${_lng.toStringAsFixed(5)}\nUpdated: $_lastUpdate' : 'Not available',
               backgroundColor: Colors.orange.shade50,
             ),
             const SizedBox(height: 12),
-
-            // Safety status
             _StatusCard(
-              icon: _isDrowsy
-                  ? Icons.warning_amber_rounded
-                  : Icons.verified_user,
+              icon: _isDrowsy ? Icons.warning_amber_rounded : Icons.verified_user,
               iconColor: _isDrowsy ? Colors.red : Colors.green,
               title: 'Driver Safety',
-              subtitle: _isDrowsy
-                  ? 'ALERT: $_lastAlert'
-                  : 'Status: Alert & Focused',
-              backgroundColor:
-                  _isDrowsy ? Colors.red.shade50 : Colors.green.shade50,
+              subtitle: _isDrowsy ? 'ALERT: $_lastAlert' : 'Status: Alert & Focused',
+              backgroundColor: _isDrowsy ? Colors.red.shade50 : Colors.green.shade50,
             ),
             const SizedBox(height: 12),
 
-            // Students
+            // 🔥 Student Summary Section
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                    // ✅ මේ විදිහට වෙනස් කරන්න:
-color: Colors.black.withValues(alpha: 0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -214,23 +208,15 @@ color: Colors.black.withValues(alpha: 0.06),
                     children: [
                       Icon(Icons.people, color: Colors.purple),
                       SizedBox(width: 10),
-                      Text(
-                        'Student Summary',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
+                      Text('Student Summary', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     ],
                   ),
                   const SizedBox(height: 14),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _miniStat('On Board', '$_studentsOnBoard',
-                          Colors.green.shade700),
-                      _miniStat(
-                          'Exited', '$_studentsExited', Colors.blue.shade700),
+                      _miniStat('On Board', '$_studentsOnBoard', Colors.green.shade700),
+                      _miniStat('Exited', '$_studentsExited', Colors.blue.shade700),
                     ],
                   ),
                 ],
@@ -245,9 +231,7 @@ color: Colors.black.withValues(alpha: 0.06),
   Widget _miniStat(String label, String value, Color color) {
     return Column(
       children: [
-        Text(value,
-            style: TextStyle(
-                fontSize: 28, fontWeight: FontWeight.bold, color: color)),
+        Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color)),
         Text(label, style: const TextStyle(fontSize: 13, color: Colors.grey)),
       ],
     );
@@ -293,13 +277,9 @@ class _StatusCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15)),
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 const SizedBox(height: 2),
-                Text(subtitle,
-                    style: const TextStyle(
-                        fontSize: 13, color: Colors.black54)),
+                Text(subtitle, style: const TextStyle(fontSize: 13, color: Colors.black54)),
               ],
             ),
           ),

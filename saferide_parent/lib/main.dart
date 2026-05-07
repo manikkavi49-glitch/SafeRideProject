@@ -9,18 +9,27 @@ import 'navigation_menu.dart';
 import 'register_page.dart';
 
 void main() async {
+  // 1. Flutter Engine එක සූදානම් කිරීම
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: "AIzaSyDMmTpVj-sAc7RnPFVHaqp2e_6vFY9BUwg",
-      appId: "1:116790427666:android:a8ab2bb963e9c33b7498cb",
-      messagingSenderId: "116790427666",
-      projectId: "saferide-g5",
-      databaseURL: "https://saferide-g5-default-rtdb.firebaseio.com",
-      storageBucket: "saferide-g5.firebasestorage.app",
-    ),
-  );
+  try {
+    // 2. Firebase දැනටමත් initialize වෙලා නැතිනම් පමණක් initialize කරන්න
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyDMmTpVj-sAc7RnPFVHaqp2e_6vFY9BUwg",
+          appId: "1:116790427666:android:a8ab2bb963e9c33b7498cb",
+          messagingSenderId: "116790427666",
+          projectId: "saferide-g5",
+          databaseURL: "https://saferide-g5-default-rtdb.firebaseio.com",
+          storageBucket: "saferide-g5.firebasestorage.app",
+        ),
+      );
+      print("Firebase Setup සාර්ථකයි!");
+    }
+  } catch (e) {
+    print("Firebase Error එකක් ආවා: $e");
+  }
 
   runApp(const SafeRideParentApp());
 }
@@ -52,48 +61,6 @@ class SafeRideParentApp extends StatelessWidget {
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
-class ParentMapScreen extends StatefulWidget {
-  const ParentMapScreen({super.key});
-
-  @override
-  State<ParentMapScreen> createState() => _ParentMapScreenState();
-}
-
-class _ParentMapScreenState extends State<ParentMapScreen> {
-  // Default position eka Colombo (6.9271, 79.8612)
-  LatLng _busPos = const LatLng(6.9271, 79.8612); 
-  GoogleMapController? _mapController;
-  
-  // Firebase reference eka hariyatama image eke thibuna path ekata
-  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref("v1/locations/van01");
-
-  @override
-  void initState() {
-    super.initState();
-    _listenToBusLocation();
-  }
-
-  void _listenToBusLocation() {
-    _dbRef.onValue.listen((event) {
-      final data = event.snapshot.value as Map?;
-      if (data != null) {
-        // Data types double walata cast kirima
-        double lat = (data['lat'] as num).toDouble();
-        double lng = (data['lng'] as num).toDouble();
-
-        setState(() {
-          _busPos = LatLng(lat, lng);
-        });
-
-        // Bus eka move weddi Map Camera ekath bus eka passhen yanawa
-        _mapController?.animateCamera(
-          CameraUpdate.newLatLng(_busPos),
-        );
-      }
-    }, onError: (error) {
-      debugPrint("Firebase Error: $error");
-    });
-  }
 
   @override
   Widget build(BuildContext context) {

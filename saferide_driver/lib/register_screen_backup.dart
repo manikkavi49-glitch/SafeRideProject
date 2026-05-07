@@ -14,7 +14,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _licenseController = TextEditingController();
-  final _vanIdController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -29,7 +28,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     _licenseController.dispose();
-    _vanIdController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -57,30 +55,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await credential.user!.updateDisplayName(_nameController.text.trim());
 
       // 3. Save driver profile to Realtime Database under drivers/{uid}
-      final vanId = _vanIdController.text.trim().toLowerCase();
       await FirebaseDatabase.instance.ref("drivers/$uid").set({
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'licenseNumber': _licenseController.text.trim(),
         'email': _emailController.text.trim(),
         'role': 'driver',
-        'vanId': vanId,
+        'vanId': 'van01', // Default — can be updated by admin
         'registeredAt': ServerValue.timestamp,
         'isActive': true,
       });
-
-      // Init location slot for this van if it doesn't exist yet
-      final locRef = FirebaseDatabase.instance.ref('v1/locations/$vanId');
-      final locSnap = await locRef.get();
-      if (!locSnap.exists) {
-        await locRef.set({
-          'lat': 7.3022,
-          'lng': 80.6352,
-          'speed': 0,
-          'isActive': false,
-          'lastUpdate': ServerValue.timestamp,
-        });
-      }
 
       // AuthGate in main.dart will detect the new user and navigate
       if (mounted) {
@@ -214,26 +198,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       validator: (v) => (v == null || v.trim().isEmpty)
                           ? 'Please enter your license number'
                           : null,
-                    ),
-                    const SizedBox(height: 14),
-
-                    TextFormField(
-                      controller: _vanIdController,
-                      textCapitalization: TextCapitalization.none,
-                      decoration: _inputDecoration(
-                        label: 'Van ID (e.g. van01, van02)',
-                        icon: Icons.directions_bus_outlined,
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'Please enter your assigned Van ID';
-                        }
-                        final val = v.trim().toLowerCase();
-                        if (!RegExp(r'^van\d+$').hasMatch(val)) {
-                          return 'Format: van01, van02, van03 …';
-                        }
-                        return null;
-                      },
                     ),
 
                     const SizedBox(height: 24),

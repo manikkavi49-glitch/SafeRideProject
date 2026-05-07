@@ -55,12 +55,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── Load profile ─────────────────────────────────────────────────────────
   Future<void> _loadProfile() async {
     if (_user == null) return;
-    _nameController.text = _user!.displayName ?? '';
 
     try {
       // 🔥 Read root driver node (includes registration data + profile subnode)
       final rootSnap = await FirebaseDatabase.instance
-          .ref("drivers/\${_user!.uid}")
+          .ref("drivers/${_user!.uid}")
           .get();
 
       if (rootSnap.exists) {
@@ -69,42 +68,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // Root-level fields set during registration
         final rootName    = root['name']?.toString()          ?? '';
         final rootPhone   = root['phone']?.toString()         ?? '';
-        // Registration uses 'licenseNumber', profile subnode uses 'license'
-        final rootLicense = root['licenseNumber']?.toString().isNotEmpty == true
-                                ? root['licenseNumber'].toString()
-                                : root['license']?.toString() ?? '';
+        final rootLicense = root['licenseNumber']?.toString() ?? '';
 
         // Profile subnode written by this screen
         final profile = (root['profile'] ?? {}) as Map;
 
-        _nameController.text = profile['name']?.toString().isNotEmpty == true
-            ? profile['name'].toString()
-            : (rootName.isNotEmpty ? rootName : _nameController.text);
+        if (mounted) {
+          setState(() {
+            // Profile subnode එකේ දත්ත ඇත්නම් ඒවාට මුල් තැන ලබා දේ
+            _nameController.text = profile['name']?.toString() ?? rootName;
+            _phoneController.text = profile['phone']?.toString() ?? rootPhone;
+            _licenseController.text = profile['license']?.toString() ?? rootLicense;
+            _vehicleController.text = profile['vehicle']?.toString() ?? root['vanId']?.toString() ?? '';
+            _routeController.text = profile['route']?.toString() ?? '';
 
-        _phoneController.text = profile['phone']?.toString().isNotEmpty == true
-            ? profile['phone'].toString()
-            : rootPhone;
-
-        _licenseController.text = profile['license']?.toString().isNotEmpty == true
-            ? profile['license'].toString()
-            : rootLicense;
-
-        // vanId at root maps to Vehicle/Van ID field
-        _vehicleController.text = profile['vehicle']?.toString().isNotEmpty == true
-            ? profile['vehicle'].toString()
-            : root['vanId']?.toString() ?? '';
-
-        _routeController.text = profile['route']?.toString() ?? '';
-
-        // 🔥 Base64 photo
-        final b64 = profile['photoBase64']?.toString() ?? '';
-        if (b64.isNotEmpty) _photoBase64 = b64;
+            // 🔥 Base64 photo කියවා ගැනීම
+            final b64 = profile['photoBase64']?.toString() ?? '';
+            if (b64.isNotEmpty) _photoBase64 = b64;
+            
+            _isLoading = false; // දත්ත කියවා අවසන් වූ පසු loading නවත්වයි
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isLoading = false);
       }
     } catch (e) {
-      debugPrint("Profile load error: \$e");
+      debugPrint("Profile load error: $e");
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    if (mounted) setState(() => _isLoading = false);
   }
 
   // ── Load stats ────────────────────────────────────────────────────────────
@@ -120,8 +111,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _totalTrips = (tripsSnap.value as Map).length;
       }
 
+      // Driver ගේ vanId read කරලා correct alerts path use කරනවා
+      final driverSnap = await FirebaseDatabase.instance
+          .ref("drivers/${_user!.uid}")
+          .get();
+      String vanId = 'van01';
+      if (driverSnap.exists) {
+        final d = driverSnap.value as Map;
+        final v = d['vanId']?.toString() ??
+            (d['profile'] as Map?)?['vehicle']?.toString();
+        if (v != null && v.isNotEmpty) vanId = v.toLowerCase();
+      }
+
       final alertSnap =
-          await FirebaseDatabase.instance.ref("v1/alerts/van01").get();
+          await FirebaseDatabase.instance.ref("v1/alerts/$vanId").get();
       if (alertSnap.exists) {
         final data = alertSnap.value as Map?;
         if (data != null && data['isDrowsy'] == true) _alertsToday = 1;
@@ -150,7 +153,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'route'    : _routeController.text.trim(),
         'email'    : _user!.email ?? '',
         'updatedAt': ServerValue.timestamp,
-        // photoBase64 is saved separately in _pickPhoto
       });
 
       if (mounted) {
@@ -180,28 +182,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 50,  // 🔥 Keep quality low — Base64 inflates size by ~33%
-      maxWidth: 300,     // 🔥 300×300 max keeps payload under ~50 KB in DB
+      imageQuality: 50,
+      maxWidth: 300,
       maxHeight: 300,
     );
     if (picked == null) return;
 
     final file = File(picked.path);
 
-    // Show local image immediately — no waiting
     setState(() {
       _localPhotoFile   = file;
       _isUploadingPhoto = true;
     });
 
     try {
-      // 🔥 Step 1: Read raw bytes
       final bytes = await file.readAsBytes();
-
-      // 🔥 Step 2: Encode to Base64 string
       final base64Str = base64Encode(bytes);
 
-      // 🔥 Step 3: Write directly to Realtime Database
       await FirebaseDatabase.instance
           .ref("drivers/${_user!.uid}/profile")
           .update({'photoBase64': base64Str});
@@ -506,10 +503,6 @@ class _ProfileHeader extends StatelessWidget {
     required this.onEditPhoto,
   });
 
-  // 🔥 Resolve the correct ImageProvider:
-  //    1. Local file (instant preview while saving)
-  //    2. Base64 decoded from DB
-  //    3. null → show initial letter
   ImageProvider? get _imageProvider {
     if (localPhotoFile != null) return FileImage(localPhotoFile!);
     if (photoBase64 != null && photoBase64!.isNotEmpty) {
@@ -559,7 +552,6 @@ class _ProfileHeader extends StatelessWidget {
                       )
                     : null,
               ),
-              // Spinner while saving to DB
               if (isUploadingPhoto)
                 Container(
                   width: 104, height: 104,
@@ -570,7 +562,6 @@ class _ProfileHeader extends StatelessWidget {
                   child: const CircularProgressIndicator(
                       color: Colors.white, strokeWidth: 3),
                 ),
-              // Camera button — always visible
               Positioned(
                 bottom: 0, right: 0,
                 child: GestureDetector(

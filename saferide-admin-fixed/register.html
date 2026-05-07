@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SafeRide Admin · Register</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<style>
+:root {
+  --bg:      #0b0f1a;
+  --surface: #111827;
+  --surface2:#1a2236;
+  --border:  #1e2d45;
+  --accent:  #00e5a0;
+  --accent2: #0066ff;
+  --danger:  #ff3366;
+  --warn:    #ff6b35;
+  --text:    #e8edf5;
+  --text2:   #7a8ba0;
+  --text3:   #3d5069;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.bg-grid {
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: .35; pointer-events: none;
+}
+.bg-orb { position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; opacity: .15; }
+.orb1   { width: 500px; height: 500px; background: var(--accent2); top: -150px; right: -100px; }
+.orb2   { width: 400px; height: 400px; background: var(--accent);  bottom: -100px; left: -100px; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px;
+  width: 460px;
+  max-width: 95vw;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 24px 64px rgba(0,0,0,.5);
+}
+
+.logo {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 28px;
+}
+.logo-icon {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+.logo-text h1 { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; }
+.logo-text span { font-size: 11px; color: var(--text2); font-family: 'DM Mono', monospace; letter-spacing: 1px; text-transform: uppercase; }
+
+h2 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.subtitle { font-size: 13px; color: var(--text2); margin-bottom: 26px; }
+
+/* Step indicator */
+.steps {
+  display: flex; align-items: center; gap: 0;
+  margin-bottom: 28px;
+}
+.step {
+  display: flex; align-items: center; gap: 8px;
+  flex: 1;
+}
+.step-circle {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--surface2); border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-family: 'DM Mono', monospace; font-weight: 700;
+  flex-shrink: 0; transition: all .3s;
+}
+.step.active .step-circle { background: var(--accent); border-color: var(--accent); color: #000; }
+.step.done   .step-circle { background: var(--accent); border-color: var(--accent); color: #000; }
+.step-label { font-size: 12px; color: var(--text3); transition: color .3s; }
+.step.active .step-label { color: var(--accent); font-weight: 600; }
+.step.done   .step-label { color: var(--text2); }
+.step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; transition: background .3s; }
+.step-line.done { background: var(--accent); }
+
+/* Form */
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.form-group.row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.form-label { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text2); text-transform: uppercase; letter-spacing: .8px; }
+.input-wrap { position: relative; }
+.input-wrap i.ico { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 14px; pointer-events: none; }
+.form-input {
+  width: 100%;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px 12px 40px;
+  color: var(--text); font-size: 14px; font-family: 'DM Sans', sans-serif;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,160,.1); }
+.form-input::placeholder { color: var(--text3); }
+.form-input.error { border-color: var(--danger); }
+.field-error { font-size: 11px; color: var(--danger); margin-top: 4px; display: none; }
+.field-error.show { display: block; }
+
+.pw-toggle {
+  position: absolute; right: 13px; top: 50%; transform: translateY(-50%);
+  color: var(--text3); cursor: pointer; font-size: 14px; padding: 4px; transition: color .2s;
+}
+.pw-toggle:hover { color: var(--text2); }
+
+/* Password strength */
+.pw-strength { margin-top: 8px; }
+.pw-strength-bar {
+  height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 4px;
+}
+.pw-strength-fill { height: 100%; border-radius: 99px; transition: width .3s, background .3s; width: 0%; }
+.pw-strength-label { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+/* Checkbox */
+.checkbox-group {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 22px; cursor: pointer;
+}
+.checkbox-group input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+.checkbox-group span { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.checkbox-group a { color: var(--accent); text-decoration: none; }
+
+/* Buttons */
+.btn-row { display: flex; gap: 10px; margin-top: 6px; }
+.btn-submit {
+  flex: 1; background: var(--accent); color: #000;
+  border: none; border-radius: 10px; padding: 13px;
+  font-size: 15px; font-weight: 700; font-family: 'Syne', sans-serif;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-submit:hover { background: #00c98a; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,160,.25); }
+.btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+.btn-submit .spinner { width: 18px; height: 18px; border: 2px solid rgba(0,0,0,.3); border-top-color: #000; border-radius: 50%; animation: spin .6s linear infinite; display: none; }
+.btn-submit.loading .btn-text { display: none; }
+.btn-submit.loading .spinner  { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn-back {
+  background: transparent; border: 1px solid var(--border); color: var(--text2);
+  border-radius: 10px; padding: 13px 18px;
+  font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.btn-back:hover { background: var(--surface2); color: var(--text); }
+
+/* Messages */
+.error-box {
+  background: rgba(255,51,102,.1); border: 1px solid rgba(255,51,102,.3);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--danger);
+  margin-bottom: 16px; display: none; align-items: center; gap: 8px;
+}
+.error-box.show { display: flex; }
+.success-box {
+  background: rgba(0,229,160,.1); border: 1px solid rgba(0,229,160,.3);
+  border-radius: 8px; padding: 14px; font-size: 13px; color: var(--accent);
+  display: none; flex-direction: column; gap: 6px; text-align: center;
+  align-items: center;
+}
+.success-box.show { display: flex; }
+.success-box .big { font-family: 'Syne', sans-serif; font-size: 36px; margin-bottom: 4px; }
+.success-box h4 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+.success-box p  { font-size: 12px; color: var(--text2); }
+
+.login-link { text-align: center; font-size: 13px; color: var(--text2); margin-top: 20px; }
+.login-link a { color: var(--accent); text-decoration: none; font-weight: 600; }
+.login-link a:hover { text-decoration: underline; }
+
+/* Step panels */
+.step-panel { display: none; }
+.step-panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+
+<div class="card">
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-icon">🚌</div>
+    <div class="logo-text">
+      <h1>SafeRide</h1>
+      <span>Admin Console</span>
+    </div>
+  </div>
+
+  <h2>Create Admin Account</h2>
+  <p class="subtitle">Register to manage the SafeRide fleet</p>
+
+  <!-- Step indicator -->
+  <div class="steps">
+    <div class="step active" id="step-ind-1">
+      <div class="step-circle">1</div>
+      <div class="step-label">Account</div>
+    </div>
+    <div class="step-line" id="line-1"></div>
+    <div class="step" id="step-ind-2">
+      <div class="step-circle">2</div>
+      <div class="step-label">Security</div>
+    </div>
+    <div class="step-line" id="line-2"></div>
+    <div class="step" id="step-ind-3">
+      <div class="step-circle">3</div>
+      <div class="step-label">Done</div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box" id="error-box">
+    <i class="fas fa-circle-exclamation"></i>
+    <span id="error-msg"></span>
+  </div>
+
+  <!-- ── STEP 1: Profile ── -->
+  <div class="step-panel active" id="panel-1">
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <div class="input-wrap">
+        <i class="fas fa-user ico"></i>
+        <input class="form-input" type="text" id="reg-name"
+               placeholder="e.g. Kavishka Manohara" autocomplete="name"/>
+      </div>
+      <span class="field-error" id="err-name"></span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <div class="input-wrap">
+        <i class="fas fa-envelope ico"></i>
+        <input class="form-input" type="email" id="reg-email"
+               placeholder="admin@saferide.lk" autocomplete="email"/>
+      </div>
+      <span class="field-error" id="err-email"></span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Phone Number <span style="color:var(--text3)">(optional)</span></label>
+      <div class="input-wrap">
+        <i class="fas fa-phone ico"></i>
+        <input class="form-input" type="tel" id="reg-phone"
+               placeholder="+94 77 000 0000"/>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:10px">
+      <button class="btn-submit" onclick="goStep2()">
+        <span class="btn-text">Continue <i class="fas fa-arrow-right"></i></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: Password + confirm ── -->
+  <div class="step-panel" id="panel-2">
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <div class="input-wrap">
+        <i class="fas fa-lock ico"></i>
+        <input class="form-input" type="password" id="reg-password"
+               placeholder="Minimum 8 characters"
+               autocomplete="new-password"
+               oninput="checkStrength(this.value)"/>
+        <span class="pw-toggle" onclick="togglePw('reg-password', this)">
+          <i class="fas fa-eye"></i>
+        </span>
+      </div>
+      <div class="pw-strength">
+        <div class="pw-strength-bar"><div class="pw-strength-fill" id="pw-bar"></div></div>
+        <div class="pw-strength-label" id="pw-label">Enter a password</div>
+      </div>
+      <span class="field-error" id="err-password"></span>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Confirm Password</label>
+      <div class="input-wrap">
+        <i class="fas fa-lock ico"></i>
+        <input class="form-input" type="password" id="reg-confirm"
+               placeholder="Re-enter your password"
+               autocomplete="new-password"
+               onkeydown="if(event.key==='Enter')doRegister()"/>
+        <span class="pw-toggle" onclick="togglePw('reg-confirm', this)">
+          <i class="fas fa-eye"></i>
+        </span>
+      </div>
+      <span class="field-error" id="err-confirm"></span>
+    </div>
+
+    <label class="checkbox-group">
+      <input type="checkbox" id="agree-terms"/>
+      <span>I agree to the <a href="#">Terms of Service</a> and confirm this is an authorised admin account for the SafeRide system.</span>
+    </label>
+    <span class="field-error" id="err-terms"></span>
+
+    <div class="btn-row">
+      <button class="btn-back" onclick="goStep1()">
+        <i class="fas fa-arrow-left"></i> Back
+      </button>
+      <button class="btn-submit" id="register-btn" onclick="doRegister()">
+        <span class="btn-text"><i class="fas fa-user-plus"></i> Create Account</span>
+        <div class="spinner"></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: Success ── -->
+  <div class="step-panel" id="panel-3">
+    <div class="success-box show">
+      <div class="big">🎉</div>
+      <h4>Account Created!</h4>
+      <p>Welcome to SafeRide Admin. Your account is ready.</p>
+      <p id="success-name" style="color:var(--accent);font-weight:600;font-size:14px"></p>
+    </div>
+    <button class="btn-submit" style="margin-top:18px" onclick="window.location.href='index.html'">
+      <span class="btn-text"><i class="fas fa-chart-line"></i> Go to Dashboard</span>
+    </button>
+  </div>
+
+  <div class="login-link">
+    Already have an account? <a href="login.html">Sign in</a>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+// ── Redirect if already logged in ─────────────────────────────────────────────
+auth.onAuthStateChanged(user => {
+  if (user) window.location.href = 'index.html';
+});
+
+let currentStep = 1;
+
+// ── Step navigation ───────────────────────────────────────────────────────────
+function goStep2() {
+  clearErrors();
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  let ok = true;
+
+  if (!name || name.length < 2) {
+    showFieldError('err-name', 'Please enter your full name (at least 2 characters).');
+    ok = false;
+  }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showFieldError('err-email', 'Please enter a valid email address.');
+    ok = false;
+  }
+  if (!ok) return;
+
+  setStep(2);
+}
+
+function goStep1() { setStep(1); }
+
+function setStep(n) {
+  currentStep = n;
+  [1, 2, 3].forEach(i => {
+    document.getElementById(`panel-${i}`).classList.toggle('active', i === n);
+    const ind = document.getElementById(`step-ind-${i}`);
+    ind.classList.remove('active', 'done');
+    if (i === n) ind.classList.add('active');
+    if (i < n)  ind.classList.add('done');
+  });
+  // Lines
+  document.getElementById('line-1').classList.toggle('done', n > 1);
+  document.getElementById('line-2').classList.toggle('done', n > 2);
+}
+
+// ── Register ──────────────────────────────────────────────────────────────────
+async function doRegister() {
+  clearErrors();
+  const name     = document.getElementById('reg-name').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const confirm  = document.getElementById('reg-confirm').value;
+  const agreed   = document.getElementById('agree-terms').checked;
+  const btn      = document.getElementById('register-btn');
+
+  let ok = true;
+  if (password.length < 8) {
+    showFieldError('err-password', 'Password must be at least 8 characters.'); ok = false;
+  }
+  if (password !== confirm) {
+    showFieldError('err-confirm', 'Passwords do not match.'); ok = false;
+  }
+  if (!agreed) {
+    showFieldError('err-terms', 'You must agree to the terms to continue.'); ok = false;
+  }
+  if (!ok) return;
+
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    const { profile } = await registerAdmin(name, email, password);
+    document.getElementById('success-name').textContent = `Logged in as: ${email}`;
+    setStep(3);
+  } catch (e) {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    showGlobalError(friendlyError(e.code));
+  }
+}
+
+// ── Password strength ─────────────────────────────────────────────────────────
+function checkStrength(pw) {
+  const bar   = document.getElementById('pw-bar');
+  const label = document.getElementById('pw-label');
+  let score = 0;
+  if (pw.length >= 8)          score++;
+  if (/[A-Z]/.test(pw))        score++;
+  if (/[0-9]/.test(pw))        score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+  const levels = [
+    { pct: '0%',   color: 'var(--border)',  text: 'Enter a password' },
+    { pct: '25%',  color: 'var(--danger)',  text: 'Weak' },
+    { pct: '50%',  color: 'var(--warn)',    text: 'Fair' },
+    { pct: '75%',  color: 'var(--accent2)', text: 'Good' },
+    { pct: '100%', color: 'var(--accent)',  text: 'Strong ✓' },
+  ];
+  const level = pw.length === 0 ? levels[0] : levels[score];
+  bar.style.width      = level.pct;
+  bar.style.background = level.color;
+  label.textContent    = level.text;
+  label.style.color    = level.color === 'var(--border)' ? 'var(--text3)' : level.color;
+}
+
+// ── Password toggle ───────────────────────────────────────────────────────────
+function togglePw(inputId, iconEl) {
+  const input = document.getElementById(inputId);
+  const icon  = iconEl.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'fas fa-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'fas fa-eye';
+  }
+}
+
+// ── Error helpers ─────────────────────────────────────────────────────────────
+function showFieldError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.classList.add('show');
+}
+function showGlobalError(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-box').classList.add('show');
+}
+function clearErrors() {
+  document.getElementById('error-box').classList.remove('show');
+  ['err-name','err-email','err-password','err-confirm','err-terms'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '';
+    el.classList.remove('show');
+  });
+}
+
+function friendlyError(code) {
+  const map = {
+    'auth/email-already-in-use':   'An account with this email already exists.',
+    'auth/invalid-email':          'Invalid email address.',
+    'auth/weak-password':          'Password is too weak. Use at least 8 characters.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+    'auth/operation-not-allowed':  'Email/password sign-up is not enabled. Enable it in Firebase Console → Authentication.',
+  };
+  return map[code] || 'Registration failed. Please try again.';
+}
+</script>
+</body>
+</html>

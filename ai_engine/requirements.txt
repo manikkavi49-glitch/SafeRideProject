@@ -1,4 +1,0 @@
-mediapipe
-opencv-python
-scipy
-firebase-admin

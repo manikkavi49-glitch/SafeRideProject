@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SafeRide Admin · Login</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<style>
+:root {
+  --bg:      #0b0f1a;
+  --surface: #111827;
+  --surface2:#1a2236;
+  --border:  #1e2d45;
+  --accent:  #00e5a0;
+  --accent2: #0066ff;
+  --danger:  #ff3366;
+  --warn:    #ff6b35;
+  --text:    #e8edf5;
+  --text2:   #7a8ba0;
+  --text3:   #3d5069;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated background grid */
+.bg-grid {
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: .35;
+  pointer-events: none;
+}
+
+/* Glow orbs */
+.bg-orb {
+  position: fixed; border-radius: 50%;
+  filter: blur(80px); pointer-events: none; opacity: .18;
+}
+.orb1 { width: 500px; height: 500px; background: var(--accent);  top: -150px; left: -150px; }
+.orb2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; right: -100px; }
+
+/* Card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px;
+  width: 420px;
+  max-width: 95vw;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 24px 64px rgba(0,0,0,.5);
+}
+
+/* Logo */
+.logo {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 32px;
+}
+.logo-icon {
+  width: 48px; height: 48px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+}
+.logo-text h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px; font-weight: 800;
+}
+.logo-text span {
+  font-size: 11px; color: var(--text2);
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 1px; text-transform: uppercase;
+}
+
+h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px; font-weight: 700;
+  margin-bottom: 6px;
+}
+.subtitle {
+  font-size: 13px; color: var(--text2);
+  margin-bottom: 28px;
+}
+
+/* Form */
+.form-group {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-bottom: 16px;
+}
+.form-label {
+  font-size: 11px; font-family: 'DM Mono', monospace;
+  color: var(--text2); text-transform: uppercase; letter-spacing: .8px;
+}
+.input-wrap {
+  position: relative;
+}
+.input-wrap i {
+  position: absolute; left: 14px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3); font-size: 14px;
+  pointer-events: none;
+}
+.form-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px 12px 40px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,229,160,.1);
+}
+.form-input::placeholder { color: var(--text3); }
+
+/* Password toggle */
+.pw-toggle {
+  position: absolute; right: 13px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--text3); cursor: pointer; font-size: 14px;
+  padding: 4px;
+  transition: color .2s;
+}
+.pw-toggle:hover { color: var(--text2); }
+
+/* Remember + forgot row */
+.row-between {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 24px;
+}
+.remember {
+  display: flex; align-items: center; gap: 8px;
+  cursor: pointer; font-size: 13px; color: var(--text2);
+}
+.remember input[type=checkbox] {
+  width: 16px; height: 16px;
+  accent-color: var(--accent); cursor: pointer;
+}
+.forgot {
+  font-size: 13px; color: var(--accent);
+  text-decoration: none; cursor: pointer;
+  background: none; border: none; font-family: 'DM Sans', sans-serif;
+}
+.forgot:hover { text-decoration: underline; }
+
+/* Submit button */
+.btn-submit {
+  width: 100%;
+  background: var(--accent); color: #000;
+  border: none; border-radius: 10px;
+  padding: 13px;
+  font-size: 15px; font-weight: 700;
+  font-family: 'Syne', sans-serif;
+  cursor: pointer;
+  transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  position: relative; overflow: hidden;
+}
+.btn-submit:hover { background: #00c98a; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,160,.25); }
+.btn-submit:active { transform: translateY(0); }
+.btn-submit:disabled { opacity: .6; cursor: not-allowed; transform: none; }
+
+.btn-submit .spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(0,0,0,.3);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  display: none;
+}
+.btn-submit.loading .btn-text { display: none; }
+.btn-submit.loading .spinner  { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Error message */
+.error-box {
+  background: rgba(255,51,102,.1);
+  border: 1px solid rgba(255,51,102,.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--danger);
+  margin-bottom: 16px;
+  display: none;
+  align-items: center; gap: 8px;
+}
+.error-box.show { display: flex; }
+
+/* Success message */
+.success-box {
+  background: rgba(0,229,160,.1);
+  border: 1px solid rgba(0,229,160,.3);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 16px;
+  display: none;
+  align-items: center; gap: 8px;
+}
+.success-box.show { display: flex; }
+
+/* Divider */
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 22px 0;
+  color: var(--text3); font-size: 12px;
+  font-family: 'DM Mono', monospace;
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1;
+  height: 1px; background: var(--border);
+}
+
+/* Register link */
+.register-link {
+  text-align: center;
+  font-size: 13px; color: var(--text2);
+}
+.register-link a {
+  color: var(--accent); text-decoration: none; font-weight: 600;
+}
+.register-link a:hover { text-decoration: underline; }
+
+/* Forgot modal */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+  z-index: 200; display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px; width: 380px; max-width: 95vw;
+  transform: scale(.95); transition: transform .2s;
+}
+.modal-overlay.open .modal { transform: scale(1); }
+.modal h3 { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.modal p  { font-size: 13px; color: var(--text2); margin-bottom: 18px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.btn-ghost {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text2); border-radius: 8px;
+  padding: 9px 16px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: all .2s;
+}
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-primary {
+  background: var(--accent); color: #000;
+  border: none; border-radius: 8px;
+  padding: 9px 16px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: all .2s;
+}
+.btn-primary:hover { background: #00c98a; }
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb orb1"></div>
+<div class="bg-orb orb2"></div>
+
+<div class="card">
+  <!-- Logo -->
+  <div class="logo">
+    <div class="logo-icon">🚌</div>
+    <div class="logo-text">
+      <h1>SafeRide</h1>
+      <span>Admin Console</span>
+    </div>
+  </div>
+
+  <h2>Welcome back</h2>
+  <p class="subtitle">Sign in to your admin account to continue</p>
+
+  <!-- Error / Success -->
+  <div class="error-box" id="error-box">
+    <i class="fas fa-circle-exclamation"></i>
+    <span id="error-msg">Invalid email or password.</span>
+  </div>
+  <div class="success-box" id="success-box">
+    <i class="fas fa-circle-check"></i>
+    <span id="success-msg">Signed in! Redirecting…</span>
+  </div>
+
+  <!-- Form -->
+  <div class="form-group">
+    <label class="form-label">Email Address</label>
+    <div class="input-wrap">
+      <i class="fas fa-envelope"></i>
+      <input class="form-input" type="email" id="email"
+             placeholder="admin@saferide.lk"
+             autocomplete="email"/>
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Password</label>
+    <div class="input-wrap">
+      <i class="fas fa-lock"></i>
+      <input class="form-input" type="password" id="password"
+             placeholder="Enter your password"
+             autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')doLogin()"/>
+      <span class="pw-toggle" onclick="togglePw('password', this)">
+        <i class="fas fa-eye"></i>
+      </span>
+    </div>
+  </div>
+
+  <div class="row-between">
+    <label class="remember">
+      <input type="checkbox" id="remember"/> Remember me
+    </label>
+    <button class="forgot" onclick="openForgot()">Forgot password?</button>
+  </div>
+
+  <button class="btn-submit" id="login-btn" onclick="doLogin()">
+    <span class="btn-text"><i class="fas fa-right-to-bracket"></i> Sign In</span>
+    <div class="spinner"></div>
+  </button>
+
+  <div class="divider">or</div>
+
+  <div class="register-link">
+    Don't have an account? <a href="register.html">Create admin account</a>
+  </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="modal-overlay" id="forgot-modal">
+  <div class="modal">
+    <h3>Reset Password</h3>
+    <p>Enter your admin email and we'll send a reset link.</p>
+    <div class="form-group">
+      <label class="form-label">Email Address</label>
+      <div class="input-wrap">
+        <i class="fas fa-envelope"></i>
+        <input class="form-input" type="email" id="reset-email" placeholder="admin@saferide.lk"/>
+      </div>
+    </div>
+    <div class="error-box" id="reset-error" style="margin-bottom:0">
+      <i class="fas fa-circle-exclamation"></i>
+      <span id="reset-error-msg"></span>
+    </div>
+    <div class="success-box" id="reset-success" style="margin-bottom:0">
+      <i class="fas fa-circle-check"></i>
+      <span>Reset email sent! Check your inbox.</span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeForgot()">Cancel</button>
+      <button class="btn-primary" onclick="doReset()">Send Reset Link</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script>
+// ── Redirect if already logged in ─────────────────────────────────────────────
+auth.onAuthStateChanged(user => {
+  if (user) window.location.href = 'index.html';
+});
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const remember = document.getElementById('remember').checked;
+  const btn      = document.getElementById('login-btn');
+
+  hideMessages();
+  if (!email || !password) { showError('Please enter your email and password.'); return; }
+
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    // Set persistence based on "remember me"
+    const persistence = remember
+      ? firebase.auth.Auth.Persistence.LOCAL
+      : firebase.auth.Auth.Persistence.SESSION;
+    await auth.setPersistence(persistence);
+
+    await loginWithEmail(email, password);
+    showSuccess('Signed in! Redirecting…');
+    setTimeout(() => window.location.href = 'index.html', 800);
+  } catch (e) {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    showError(friendlyError(e.code));
+  }
+}
+
+// ── Password visibility toggle ────────────────────────────────────────────────
+function togglePw(inputId, iconEl) {
+  const input = document.getElementById(inputId);
+  const icon  = iconEl.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.className = 'fas fa-eye-slash';
+  } else {
+    input.type = 'password';
+    icon.className = 'fas fa-eye';
+  }
+}
+
+// ── Forgot password ───────────────────────────────────────────────────────────
+function openForgot() {
+  document.getElementById('forgot-modal').classList.add('open');
+  document.getElementById('reset-error').classList.remove('show');
+  document.getElementById('reset-success').classList.remove('show');
+}
+function closeForgot() {
+  document.getElementById('forgot-modal').classList.remove('open');
+}
+
+async function doReset() {
+  const email = document.getElementById('reset-email').value.trim();
+  document.getElementById('reset-error').classList.remove('show');
+  document.getElementById('reset-success').classList.remove('show');
+  if (!email) {
+    document.getElementById('reset-error-msg').textContent = 'Please enter your email.';
+    document.getElementById('reset-error').classList.add('show');
+    return;
+  }
+  try {
+    await auth.sendPasswordResetEmail(email);
+    document.getElementById('reset-success').classList.add('show');
+  } catch (e) {
+    document.getElementById('reset-error-msg').textContent = friendlyError(e.code);
+    document.getElementById('reset-error').classList.add('show');
+  }
+}
+
+// Close modal on overlay click
+document.getElementById('forgot-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeForgot();
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function showError(msg) {
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('error-box').classList.add('show');
+}
+function showSuccess(msg) {
+  document.getElementById('success-msg').textContent = msg;
+  document.getElementById('success-box').classList.add('show');
+}
+function hideMessages() {
+  document.getElementById('error-box').classList.remove('show');
+  document.getElementById('success-box').classList.remove('show');
+}
+
+function friendlyError(code) {
+  const map = {
+    'auth/invalid-email':          'Invalid email address.',
+    'auth/user-not-found':         'No account found with this email.',
+    'auth/wrong-password':         'Incorrect password. Please try again.',
+    'auth/invalid-credential':     'Incorrect email or password.',
+    'auth/too-many-requests':      'Too many failed attempts. Please try again later.',
+    'auth/user-disabled':          'This account has been disabled.',
+    'auth/network-request-failed': 'Network error. Check your connection.',
+  };
+  return map[code] || 'Sign in failed. Please try again.';
+}
+</script>
+</body>
+</html>

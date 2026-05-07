@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SafeRide Admin · saferide-g5</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<link href="css/style.css" rel="stylesheet"/>
+<!-- Leaflet CSS - මෙය අනිවාර්යයි -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+
+<!-- ═══════════════════════════ SIDEBAR ════════════════════════════════════ -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🚌</div>
+    <div>
+      <h1>SafeRide</h1>
+      <span class="sub">Admin Console</span>
+    </div>
+  </div>
+
+  <div class="nav">
+    <p class="nav-section">Overview</p>
+    <a class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+      <i class="fas fa-chart-line"></i> Dashboard
+    </a>
+    <a class="nav-item" data-page="live" onclick="showPage('live')">
+      <i class="fas fa-location-dot"></i> Live Tracking
+    </a>
+
+    <p class="nav-section">Management</p>
+    <a class="nav-item" data-page="drivers" onclick="showPage('drivers')">
+      <i class="fas fa-id-card"></i> Drivers
+    </a>
+    <a class="nav-item" data-page="students" onclick="showPage('students')">
+      <i class="fas fa-children"></i> Students
+    </a>
+    <a class="nav-item" data-page="parents" onclick="showPage('parents')">
+      <i class="fas fa-users"></i> Parents
+    </a>
+
+    <p class="nav-section">Safety &amp; Ops</p>
+    <a class="nav-item" data-page="alerts" onclick="showPage('alerts')">
+      <i class="fas fa-triangle-exclamation"></i> Alerts
+      <span class="badge warn" id="badge-alerts">0</span>
+    </a>
+    <a class="nav-item" data-page="attendance" onclick="showPage('attendance')">
+      <i class="fas fa-clipboard-check"></i> Attendance
+    </a>
+    <a class="nav-item" data-page="messages" onclick="showPage('messages')">
+      <i class="fas fa-comments"></i> Messages
+    </a>
+    <a class="nav-item" data-page="trips" onclick="showPage('trips')">
+      <i class="fas fa-route"></i> Trips
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="admin-card">
+      <div class="admin-avatar">A</div>
+      <div class="admin-info">
+        <p>Admin</p>
+        <span>saferide-g5</span>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════ MAIN ═══════════════════════════════════════ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h2 id="page-title">Dashboard</h2>
+      <p id="page-sub">Live data from Firebase · saferide-g5-default-rtdb</p>
+    </div>
+    <div class="topbar-right">
+      <div class="live-pill">
+        <div class="live-dot"></div>
+        <span id="conn-label">CONNECTING</span>
+      </div>
+      <div class="icon-btn" onclick="showPage('alerts')">
+        <i class="fas fa-bell"></i>
+        <div class="notif-pip" id="notif-pip"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ══════════════════ DASHBOARD ══════════════════ -->
+    <div class="page active" id="page-dashboard">
+
+      <!-- SOS Banner -->
+      <div class="sos-bar" id="sos-bar" style="display:none">
+        <div class="sos-icon">🆘</div>
+        <div class="sos-text">
+          <h4>EMERGENCY SOS ACTIVATED</h4>
+          <p id="sos-msg">Driver has triggered an emergency SOS.</p>
+        </div>
+        <div class="sos-actions">
+          <button class="btn btn-danger btn-sm"><i class="fas fa-phone"></i> Call Driver</button>
+          <button class="btn btn-ghost btn-sm" onclick="acknowledgeSOS()">Acknowledge</button>
+        </div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-bus"></i></div>
+          <div class="stat-val" id="stat-vans">—</div>
+          <div class="stat-label">Drivers / Vans</div>
+          <div class="stat-sub" id="stat-vans-sub">Loading…</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-icon"><i class="fas fa-children"></i></div>
+          <div class="stat-val" id="stat-students">—</div>
+          <div class="stat-label">Students Enrolled</div>
+          <div class="stat-sub" id="stat-students-sub">Loading…</div>
+        </div>
+        <div class="stat-card warn">
+          <div class="stat-icon"><i class="fas fa-eye-slash"></i></div>
+          <div class="stat-val" id="stat-drowsy">—</div>
+          <div class="stat-label">AI Drowsy Events</div>
+          <div class="stat-sub" id="stat-drowsy-sub">Loading…</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="stat-icon"><i class="fas fa-shield-exclamation"></i></div>
+          <div class="stat-val" id="stat-sos">—</div>
+          <div class="stat-label">SOS Status</div>
+          <div class="stat-sub" id="stat-sos-sub">Loading…</div>
+        </div>
+      </div>
+
+      <!-- Row 2 -->
+      <div class="two-col">
+        <!-- Map -->
+        <div class="card">
+          <div class="card-header">
+            <h3>📍 Fleet Map</h3>
+            <div class="hdr-right" id="map-coords">Fetching GPS…</div>
+          </div>
+          <div class="map-box">
+            <div class="map-grid"></div>
+            <div id="dash-map"></div>
+            <div class="map-center-txt">Pilimathalawa – Kandy Region</div>
+          </div>
+        </div>
+
+        <!-- Activity -->
+        <div class="card">
+          <div class="card-header"><h3>Activity Feed</h3><span class="hdr-right">Real-time</span></div>
+          <div class="card-body" style="padding:0 18px">
+            <ul class="activity-list" id="activity-list">
+              <li class="activity-item"><div class="activity-txt"><p style="color:var(--text3)"><span class="spinner"></span>Loading…</p></div></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 3 -->
+      <div class="three-col">
+        <!-- Attendance -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Today's Attendance</h3>
+            <span class="hdr-right" id="att-stat-label">Loading…</span>
+          </div>
+          <div class="card-body" id="att-breakdown">
+            <div style="color:var(--text3);font-size:12px"><span class="spinner"></span>Loading…</div>
+          </div>
+        </div>
+
+        <!-- Van01 Live -->
+        <div class="card">
+          <div class="card-header">
+            <h3>VAN01 Live</h3>
+            <span class="hdr-right" id="van-active-chip">—</span>
+          </div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div>
+                <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:3px">SPEED</div>
+                <div style="font-size:22px;font-family:'Syne',sans-serif;font-weight:800" id="van-speed">—</div>
+              </div>
+              <div>
+                <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:3px">DROWSY AI</div>
+                <div id="van-drowsy-status" style="font-size:13px;font-weight:600">—</div>
+              </div>
+              <div style="grid-column:1/-1">
+                <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:3px">LAST ALERT</div>
+                <div style="font-size:12px;color:var(--text2)" id="van-last-alert">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent AI Logs -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Drowsy AI Logs</h3>
+            <span class="hdr-right" id="stat-drowsy-sub2">—</span>
+          </div>
+          <div class="card-body" id="dash-drowsy-recent">
+            <div style="color:var(--text3);font-size:12px"><span class="spinner"></span>Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /dashboard -->
+
+    <!-- ══════════════════ LIVE TRACKING ══════════════════ -->
+    <div class="page" id="page-live">
+      <!-- Van Selector -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+        <div id="van-selector-row" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="openModal('van-stops-modal')">
+            <i class="fas fa-map-pin"></i> Van Stops
+          </button>
+        </div>
+      </div>
+      <div class="card mb">
+        <div class="card-header">
+          <h3>📍 Live Fleet Map</h3>
+          <div class="hdr-right" id="live-coords">Fetching GPS…</div>
+        </div>
+        <div class="map-box live-map-box">
+          <div class="map-grid"></div>
+          <div id="live-map"></div>
+          <div class="map-center-txt">Pilimathalawa – Kandy</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 id="live-van-label">VAN01</h3>
+          <span class="hdr-right" id="live-updated">—</span>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px">
+            <div>
+              <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:3px">SPEED</div>
+              <div style="font-size:26px;font-family:'Syne',sans-serif;font-weight:800" id="live-speed">—</div>
+              <div style="font-size:11px;color:var(--text3)">km/h</div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:3px">LATITUDE</div>
+              <div style="font-size:14px;font-family:'DM Mono',monospace" id="live-lat">—</div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:3px">LONGITUDE</div>
+              <div style="font-size:14px;font-family:'DM Mono',monospace" id="live-lng">—</div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text3);font-family:'DM Mono',monospace;margin-bottom:3px">DROWSY</div>
+              <div id="live-drowsy-status" style="font-size:14px;font-weight:600">—</div>
+            </div>
+          </div>
+          <div style="padding-top:14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:16px">
+            <div>
+              <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">Last Alert</div>
+              <div style="font-size:13px;color:var(--warn)" id="live-last-alert">—</div>
+            </div>
+            <a id="gmap-link" href="#" target="_blank" class="btn btn-ghost btn-sm" style="margin-left:auto">
+              <i class="fas fa-map-location-dot"></i> Open in Google Maps
+            </a>
+          </div>
+        </div>
+      </div>
+    </div><!-- /live -->
+
+    <!-- ══════════════════ DRIVERS ══════════════════ -->
+    <div class="page" id="page-drivers">
+      <div class="toolbar">
+        <div class="search-box">
+          <i class="fas fa-magnifying-glass"></i>
+          <input type="text" placeholder="Search by name, email, license…" oninput="renderDrivers(this.value.toLowerCase())"/>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('add-driver-modal')">
+          <i class="fas fa-plus"></i> Add Driver
+        </button>
+      </div>
+      <div class="drivers-grid" id="drivers-grid">
+        <div style="color:var(--text3);font-size:13px;padding:20px"><span class="spinner"></span>Loading…</div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ STUDENTS ══════════════════ -->
+    <div class="page" id="page-students">
+      <div class="toolbar">
+        <div class="search-box">
+          <i class="fas fa-magnifying-glass"></i>
+          <input type="text" placeholder="Search by name, grade, parent email…" oninput="renderStudents(this.value.toLowerCase())"/>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('add-student-modal')">
+          <i class="fas fa-plus"></i> Add Student
+        </button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Grade</th><th>Van</th><th>Parent Email</th><th>Driver UID</th><th>Added</th></tr></thead>
+            <tbody id="students-tbody"><tr><td colspan="7" class="loading-cell"><span class="spinner"></span>Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ PARENTS ══════════════════ -->
+    <div class="page" id="page-parents">
+      <div class="toolbar">
+        <div class="search-box">
+          <i class="fas fa-magnifying-glass"></i>
+          <input type="text" placeholder="Search by name or email…" oninput="renderParents(this.value.toLowerCase())"/>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('add-parent-modal')">
+          <i class="fas fa-user-plus"></i> Add Parent
+        </button>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Phone</th><th>Address</th><th>Registered</th><th>Action</th></tr></thead>
+            <tbody id="parents-tbody"><tr><td colspan="7" class="loading-cell"><span class="spinner"></span>Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ ALERTS ══════════════════ -->
+    <div class="page" id="page-alerts">
+      <div class="two-col">
+        <!-- AI Logs -->
+        <div class="card">
+          <div class="card-header">
+            <h3>⚠ AI Drowsiness Log</h3>
+            <span class="hdr-right" id="ai-log-count">Loading…</span>
+          </div>
+          <div style="max-height:380px;overflow-y:auto;padding:0 18px" id="alert-log-list">
+            <div style="color:var(--text3);font-size:12px;padding:14px 0"><span class="spinner"></span>Loading…</div>
+          </div>
+        </div>
+
+        <!-- SOS -->
+        <div class="card">
+          <div class="card-header"><h3>🆘 SOS Status</h3></div>
+          <div class="card-body" id="sos-card">
+            <div style="color:var(--text3);font-size:12px"><span class="spinner"></span>Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Safety Status -->
+      <div class="card">
+        <div class="card-header"><h3>🔰 Van Safety Status</h3><span class="hdr-right">Live from safety_status/</span></div>
+        <div style="padding:0 18px" id="safety-status-list">
+          <div style="color:var(--text3);font-size:12px;padding:14px 0"><span class="spinner"></span>Loading…</div>
+        </div>
+      </div>
+    </div><!-- /alerts -->
+
+    <!-- ══════════════════ ATTENDANCE ══════════════════ -->
+    <div class="page" id="page-attendance">
+      <div class="toolbar">
+        <div class="search-box">
+          <i class="fas fa-bus"></i>
+          <select id="att-van-filter" onchange="renderAttendance()" style="background:transparent;border:none;outline:none;color:var(--text1);font-size:13px;cursor:pointer;width:100%">
+            <option value="">All Vans</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-header" style="background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:14px;padding:14px 18px">
+        <h3>📋 Trip: <span id="att-trip-label" style="color:var(--accent);font-family:'DM Mono',monospace;font-size:13px">—</span></h3>
+        <div id="att-stats"></div>
+      </div>
+      <div class="card">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Grade</th><th>Van</th><th>Status</th><th>Board Time</th><th>Exit Time</th><th>Parent Email</th></tr></thead>
+            <tbody id="attendance-tbody"><tr><td colspan="8" class="loading-cell"><span class="spinner"></span>Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ MESSAGES ══════════════════ -->
+    <div class="page" id="page-messages">
+      <div class="two-col">
+        <!-- Convo list -->
+        <div class="card" style="height:520px;display:flex;flex-direction:column">
+          <div class="card-header"><h3>💬 Conversations</h3></div>
+          <div style="flex:1;overflow-y:auto;padding:12px" id="msg-van-list">
+            <div style="text-align:center;color:var(--text3);font-size:12px;padding:20px"><span class="spinner"></span> Loading vans…</div>
+          </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="card" style="height:520px;display:flex;flex-direction:column">
+          <div class="card-header">
+            <h3 id="msg-chat-title">Select a van</h3>
+            <span class="hdr-right" id="msg-count">—</span>
+          </div>
+          <div id="chat-messages" style="flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px">
+            <div style="text-align:center;color:var(--text3);font-size:13px;padding:20px">👈 Select a van to view messages</div>
+          </div>
+          <div style="padding:12px 14px;border-top:1px solid var(--border);display:flex;gap:8px">
+            <input class="form-input" id="msg-input" style="flex:1" placeholder="Send as Admin…" onkeydown="if(event.key==='Enter')sendMessage()"/>
+            <button class="btn btn-primary" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ TRIPS ══════════════════ -->
+    <div class="page" id="page-trips">
+      <div class="card">
+        <div class="card-header">
+          <h3>🗺 All Trips</h3>
+          <span class="hdr-right" id="trip-count">Loading…</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Trip ID</th><th>Van</th><th>Status</th><th>Start Time</th><th>End Time</th><th>Last GPS</th><th>Speed</th></tr></thead>
+            <tbody id="trips-tbody"><tr><td colspan="7" class="loading-cell"><span class="spinner"></span>Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ═══════════════════ MODALS ═══════════════════════════════════════════════ -->
+
+<!-- Add Driver -->
+<div class="modal-overlay" id="add-driver-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Driver</h3>
+      <div class="close-btn" onclick="closeModal('add-driver-modal')"><i class="fas fa-xmark"></i></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="d-name" placeholder="Kavishka Manohara"/></div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="d-phone" placeholder="0782906811"/></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" id="d-email" placeholder="driver@email.com"/></div>
+      <div class="form-group"><label class="form-label">License Number</label><input class="form-input" id="d-license" placeholder="B5437149"/></div>
+      <div class="form-group"><label class="form-label">Van ID</label><input class="form-input" id="d-van" placeholder="van01"/></div>
+      <div class="form-group"><label class="form-label">Route</label><input class="form-input" id="d-route" placeholder="Pilimathalawa to Kandy"/></div>
+    </div>
+    <p style="font-size:11px;color:var(--text3);margin-top:10px">
+      Writes to <code style="color:var(--accent);font-family:'DM Mono',monospace">drivers/{key}</code> in Firebase.
+    </p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-driver-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addDriverToFirebase()"><i class="fas fa-plus"></i> Add Driver</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Student -->
+<div class="modal-overlay" id="add-student-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add Student</h3>
+      <div class="close-btn" onclick="closeModal('add-student-modal')"><i class="fas fa-xmark"></i></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Student Name</label><input class="form-input" id="s-name" placeholder="Gayathri Madushani"/></div>
+      <div class="form-group"><label class="form-label">Grade</label><input class="form-input" id="s-grade" placeholder="Grade 2"/></div>
+      <div class="form-group"><label class="form-label">Parent Email</label><input class="form-input" id="s-parent" placeholder="nipunadarshana95@gmail.com"/></div>
+      <div class="form-group"><label class="form-label">Van ID</label><input class="form-input" id="s-van" placeholder="van01"/></div>
+      <div class="form-group full"><label class="form-label">Driver Firebase UID</label><input class="form-input" id="s-driver" placeholder="Bwlgrcufz4NiFm51YwR7GkP22Lv2"/></div>
+    </div>
+    <p style="font-size:11px;color:var(--text3);margin-top:10px">
+      Writes to <code style="color:var(--accent);font-family:'DM Mono',monospace">students/{id}</code> in Firebase.
+    </p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-student-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addStudentToFirebase()"><i class="fas fa-plus"></i> Add Student</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Add Parent Modal -->
+<div class="modal-overlay" id="add-parent-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>👨‍👩‍👧 Add Parent</h3>
+      <div class="close-btn" onclick="closeModal('add-parent-modal')"><i class="fas fa-xmark"></i></div>
+    </div>
+    <div class="modal-body">
+      <label class="form-label">Full Name *</label>
+      <input class="form-input" id="p-name" placeholder="e.g. Kumari Silva"/>
+      <label class="form-label" style="margin-top:12px">Email Address *</label>
+      <input class="form-input" id="p-email" type="email" placeholder="parent@gmail.com"/>
+      <label class="form-label" style="margin-top:12px">Contact Number *</label>
+      <input class="form-input" id="p-phone" type="tel" placeholder="07xxxxxxxx"/>
+      <label class="form-label" style="margin-top:12px">Home Address</label>
+      <input class="form-input" id="p-address" placeholder="No. 10, Main Street…"/>
+      <label class="form-label" style="margin-top:12px">Password *</label>
+      <input class="form-input" id="p-password" type="password" placeholder="Minimum 6 characters"/>
+      <p style="font-size:11px;color:var(--text3);margin-top:6px">⚠ Parent will use this email &amp; password to login to the Parent app.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('add-parent-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addParentToFirebase()"><i class="fas fa-user-plus"></i> Create Account</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="van-stops-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📍 Van Proximity Stops</h3>
+      <div class="close-btn" onclick="closeModal('van-stops-modal')"><i class="fas fa-xmark"></i></div>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:14px">When a van comes within <strong>1km</strong> of a stop, admin gets an alert and a notification is pushed to parents.</p>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Van ID</label><input class="form-input" id="stop-van" placeholder="van01"/></div>
+      <div class="form-group"><label class="form-label">Stop Label</label><input class="form-input" id="stop-label" placeholder="School Gate"/></div>
+      <div class="form-group"><label class="form-label">Latitude</label><input class="form-input" id="stop-lat" placeholder="7.3022" type="number" step="0.00001"/></div>
+      <div class="form-group"><label class="form-label">Longitude</label><input class="form-input" id="stop-lng" placeholder="80.6352" type="number" step="0.00001"/></div>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-start;padding-top:10px">
+      <button class="btn btn-primary btn-sm" onclick="saveVanStop()"><i class="fas fa-plus"></i> Add Stop</button>
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">CONFIGURED STOPS</div>
+      <div id="van-stops-list"><div style="color:var(--text3);font-size:12px;padding:10px 0">No stops configured</div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('van-stops-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- Scripts (order matters) -->
+<script src="js/firebase.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

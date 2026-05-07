@@ -2,7 +2,9 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET"/>
+    
     <application
+        android:enableOnBackInvokedCallback="true"
         android:label="saferide_parent"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
@@ -34,8 +36,10 @@
             android:name="flutterEmbedding"
             android:value="2" />
         
-        <meta-data android:name="com.google.android.geo.API_KEY"
-           android:value="AIzaSyDMmTpVj-sAc7RnPFVHaqp2e_6vFY9BUwg"/>
+
+        <meta-data 
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyDQ6uQn4JsOIOo49NGCEtZGbKMHNWpVsbY"/>
         
     </application>
     <!-- Required to query activities that can process text, see:
@@ -47,6 +51,10 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+            <data android:scheme="tel" />
         </intent>
     </queries>
 </manifest>

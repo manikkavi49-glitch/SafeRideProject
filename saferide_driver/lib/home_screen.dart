@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
@@ -32,6 +33,8 @@ class _HomeScreenState extends State<HomeScreen>
   bool _sosActive = false;
   bool _isProcessing = false;
   bool _isCameraReady = false;
+  bool _vanIdReady = false; // vanId load වෙනකන් camera processing block කරනවා
+  String _vanId = 'van01'; // dynamically loaded from Firebase
 
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
@@ -61,7 +64,29 @@ class _HomeScreenState extends State<HomeScreen>
         });
       }
     };
+
+    // vanId load කරලා AlarmService ට pass කරනවා
+    _loadVanIdAndStartAlarm();
+  }
+
+  Future<void> _loadVanIdAndStartAlarm() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final snap = await FirebaseDatabase.instance.ref('drivers/${user.uid}').get();
+        if (snap.exists) {
+          final d = snap.value as Map;
+          final v = d['vanId']?.toString() ??
+              (d['profile'] as Map?)?['vehicle']?.toString();
+          if (v != null && v.isNotEmpty) {
+            _vanId = v.toLowerCase();
+          }
+        }
+      } catch (_) {}
+    }
+    _alarmService.setVanId(_vanId); // AlarmService ට correct path set කරනවා
     _alarmService.startListening();
+    if (mounted) setState(() => _vanIdReady = true); // දැන් camera processing allow
   }
 
   Future<void> _initCamera() async {
@@ -88,7 +113,7 @@ class _HomeScreenState extends State<HomeScreen>
         });
 
         _cameraController!.startImageStream((CameraImage image) {
-          if (widget.isTripActive && !_isProcessing) {
+          if (widget.isTripActive && !_isProcessing && _vanIdReady) {
             _processCameraImage(image);
           }
         });
@@ -175,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen>
           _isDrowsy = drowsyDetected;
         });
 
-        await FirebaseDatabase.instance.ref("v1/alerts/van01").set({
+        await FirebaseDatabase.instance.ref("v1/alerts/$_vanId").set({
           'isDrowsy': _isDrowsy,
           'lastAlert':
               _isDrowsy ? "Driver Drowsy Detected" : "Driver Alert",

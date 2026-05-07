@@ -9,7 +9,6 @@ class ProfilePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
-    // 1. Safety check to ensure user is logged in before database access
     if (user == null) {
       return Scaffold(
         appBar: AppBar(
@@ -20,7 +19,6 @@ class ProfilePage extends StatelessWidget {
       );
     }
 
-    // Reference using the authenticated UID
     final ref = FirebaseDatabase.instance.ref("parents/${user.uid}");
 
     return Scaffold(
@@ -60,10 +58,16 @@ class ProfilePage extends StatelessWidget {
                     ),
                     child: Column(
                       children: [
-                        const CircleAvatar(
+                        // UPDATED: Profile Image with fallback to Icon
+                        CircleAvatar(
                           radius: 50,
                           backgroundColor: Colors.white,
-                          child: Icon(Icons.person, size: 55, color: Colors.green),
+                          backgroundImage: data['profile_image'] != null 
+                              ? NetworkImage(data['profile_image'].toString()) 
+                              : null,
+                          child: data['profile_image'] == null 
+                              ? const Icon(Icons.person, size: 55, color: Colors.green) 
+                              : null,
                         ),
                         const SizedBox(height: 15),
                         Text(
@@ -88,8 +92,8 @@ class ProfilePage extends StatelessWidget {
                     child: Column(
                       children: [
                         _buildInfoTile(Icons.home, "Home Address", data['address']?.toString() ?? "Not set"),
-                        _buildInfoTile(Icons.school, "Child's School", data['school']?.toString() ?? "Not set"),
-                        _buildInfoTile(Icons.directions_bus, "Assigned Van", data['assigned_van']?.toString() ?? "Not assigned"),
+                        // REMOVED: Child's School tile
+                        _buildInfoTile(Icons.phone, "Contact Number", data['contact_number']?.toString() ?? "Not set"),
                         
                         const SizedBox(height: 30),
                         
@@ -123,12 +127,10 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // Functional Log Out Method
   void _handleLogout(BuildContext context) async {
     try {
       await FirebaseAuth.instance.signOut();
       if (context.mounted) {
-        // Navigates back to login and clears the navigation stack
         Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
       }
     } catch (e) {
@@ -136,7 +138,6 @@ class ProfilePage extends StatelessWidget {
     }
   }
 
-  // Re-usable Tile Widget
   Widget _buildInfoTile(IconData icon, String title, String subtitle) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),

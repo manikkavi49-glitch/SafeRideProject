@@ -11,6 +11,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+  http: ^1.2.0
+
   cupertino_icons: ^1.0.8
 
   # Firebase Core saha Database
@@ -21,6 +23,7 @@ dependencies:
   google_maps_flutter: ^2.10.0
   geolocator: ^13.0.2
   firebase_auth: ^5.7.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
